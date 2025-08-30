@@ -303,7 +303,75 @@ if "ani_click" in params:
     st.session_state.ani_open = not st.session_state.ani_open
     st.experimental_set_query_params()  # reset URL
 
-# Ani chatbox content
+# ---------------- HELP BOT (ANI) ---------------- #
+st.markdown(
+    """
+    <style>
+    /* Floating chat bubble button */
+    .ani-bubble {
+        position: fixed;
+        top: 120px; /* moved lower so it's below header */
+        right: 20px;
+        background-color: #28a745;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+        animation: pulse 1.8s infinite;
+        z-index: 1000;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
+        70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
+    }
+    .ani-chatbox {
+        position: fixed;
+        top: 190px; /* chatbox appears just below bubble */
+        right: 20px;
+        width: 300px;
+        background-color: #ffffff;
+        border: 2px solid #28a745;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+        padding: 10px;
+        z-index: 1000;
+    }
+    .ani-header {
+        background-color: #28a745;
+        color: white;
+        text-align: center;
+        padding: 6px;
+        border-radius: 8px 8px 0 0;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .ani-close {
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Toggle Ani visibility in session state
+if "ani_open" not in st.session_state:
+    st.session_state.ani_open = False
+
+# Floating bubble button
+if not st.session_state.ani_open:
+    if st.button("💬", key="ani_button", help="Chat with Ani", use_container_width=False):
+        st.session_state.ani_open = True
+
+# Chatbox
 if st.session_state.ani_open:
     with st.container():
         st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
@@ -326,20 +394,8 @@ if st.session_state.ani_open:
         if question:
             st.success(f"👩‍💻 Ani: {faq[question]}")
 
+        # Close button (inline)
+        if st.button("❌ Close", key="ani_close"):
+            st.session_state.ani_open = False
+
         st.markdown("</div>", unsafe_allow_html=True)
-
-        # ❌ Close button JS (simulate click)
-        st.markdown(
-            """
-            <script>
-            const closeBtn = window.parent.document.querySelector('.ani-close');
-            if (closeBtn) {
-                closeBtn.onclick = function() {
-                    window.parent.location.href = window.parent.location.pathname;
-                }
-            }
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
-
