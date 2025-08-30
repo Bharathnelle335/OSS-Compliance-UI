@@ -227,7 +227,50 @@ with left_col:
 
 # ---------------- ANI HELP BOT (RIGHT PANEL) ---------------- #
 with right_col:
-    st.markdown("## 🤖 Ani – Help Bot")
+    st.markdown(
+        """
+        <style>
+        /* Ani header with animated icon */
+        .ani-header {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .ani-icon {
+            font-size: 28px;
+            margin-right: 8px;
+            animation: pulseAni 1.5s infinite;
+        }
+        @keyframes pulseAni {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Question buttons small, light, fit text only */
+        div[data-testid="stButton"] > button {
+            background-color: #f8fdf9; /* very light green */
+            color: #333;
+            border: 1px solid #28a745;
+            border-radius: 12px;
+            padding: 6px 12px;
+            margin: 4px;
+            font-size: 14px;
+            width: auto !important;   /* fit text width */
+            display: inline-block;
+        }
+        div[data-testid="stButton"] > button:hover {
+            background-color: #e6f8ea;
+            color: #000;
+            border: 1px solid #28a745;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<div class="ani-header"><span class="ani-icon">🤖</span> Ani – Help Bot</div>', unsafe_allow_html=True)
 
     faq = {
         "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
@@ -242,7 +285,7 @@ with right_col:
         st.session_state.ani_answer = None
 
     if st.session_state.ani_answer is None:
-        st.markdown("### ❓ Select a question")
+        st.markdown("### I can help with these queries:")
         for q, a in faq.items():
             if st.button(q, key=f"ani_q_{q}"):
                 st.session_state.ani_answer = f"👩‍💻 Ani: {a}"
