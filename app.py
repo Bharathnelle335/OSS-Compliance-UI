@@ -223,17 +223,123 @@ else:
         )
 
 # ---------------- HELP BOT (ANI) ---------------- #
-with st.expander("🤖 Ani – Help Bot", expanded=False):
-    faq = {
-        "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
-        "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
-        "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
-        "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
-        "Where are results?": "Once scan is triggered, you can find reports in GitHub Actions → Artifacts. The UI also provides a direct link.",
-        "Password?": "The default password is 12345 (for demo/testing)."
+st.markdown(
+    """
+    <style>
+    /* Floating chat bubble button */
+    .ani-bubble {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #28a745;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+        animation: pulse 1.8s infinite;
+        z-index: 1000;
     }
 
-    question = st.selectbox("💬 Ask Ani a question", [""] + list(faq.keys()))
+    /* Pulse animation for highlight */
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
+        70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
+    }
 
-    if question:
-        st.success(f"👩‍💻 Ani: {faq[question]}")
+    /* Chatbox styling */
+    .ani-chatbox {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        width: 300px;
+        background-color: #ffffff;
+        border: 2px solid #28a745;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+        padding: 10px;
+        z-index: 1000;
+    }
+    .ani-header {
+        background-color: #28a745;
+        color: white;
+        text-align: center;
+        padding: 8px;
+        border-radius: 10px 10px 0 0;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .ani-close {
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Session toggle for Ani visibility
+if "ani_open" not in st.session_state:
+    st.session_state.ani_open = False
+
+# Floating chat bubble
+bubble_html = """
+    <form action="#" method="get">
+        <button class="ani-bubble" name="ani_click">💬</button>
+    </form>
+"""
+st.markdown(bubble_html, unsafe_allow_html=True)
+
+# Check query param hack for toggle
+params = st.experimental_get_query_params()
+if "ani_click" in params:
+    st.session_state.ani_open = not st.session_state.ani_open
+    st.experimental_set_query_params()  # reset URL
+
+# Ani chatbox content
+if st.session_state.ani_open:
+    with st.container():
+        st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="ani-header">👩‍💻 Ani – Help Bot <span class="ani-close">❌</span></div>',
+            unsafe_allow_html=True
+        )
+
+        faq = {
+            "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
+            "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
+            "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
+            "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
+            "Where are results?": "Once scan is triggered, you can find reports in GitHub Actions → Artifacts. The UI also provides a direct link.",
+            "Password?": "The default password is 12345 (for demo/testing)."
+        }
+
+        question = st.selectbox("💬 Ask Ani", [""] + list(faq.keys()), key="ani_selectbox")
+
+        if question:
+            st.success(f"👩‍💻 Ani: {faq[question]}")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # ❌ Close button JS (simulate click)
+        st.markdown(
+            """
+            <script>
+            const closeBtn = window.parent.document.querySelector('.ani-close');
+            if (closeBtn) {
+                closeBtn.onclick = function() {
+                    window.parent.location.href = window.parent.location.pathname;
+                }
+            }
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
+
