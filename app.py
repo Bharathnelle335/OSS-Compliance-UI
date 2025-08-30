@@ -41,23 +41,24 @@ def get_workflow_runs_url():
 # ---------------- UI CONFIG ---------------- #
 st.set_page_config(page_title="OSS Compliance & SBOM Scanner", layout="wide")
 
+# Global CSS
 st.markdown(
     """
     <style>
     .block-container {padding-top: 0rem;}
-    div.stButton > button:first-child {
-        background-color: #28a745;
-        color: white;
-        font-size: 16px;
-        font-weight: bold;
-        padding: 10px;
-        border-radius: 6px;
-        width: 100%;
-        height: 45px;
+    /* Style Start Scan button same size as Results */
+    div[data-testid="stButton"] > button {
+        background-color: #28a745 !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 6px !important;
+        height: 45px !important;
+        padding: 10px 12px !important;
+        font-size: 15px !important;
     }
-    div.stButton > button:first-child:hover {
-        background-color:#218838;
-        color:white;
+    div[data-testid="stButton"] > button:hover {
+        background-color: #218838 !important;
+        color: white !important;
     }
     </style>
     """,
@@ -139,7 +140,6 @@ with left_col:
                         padding:10px 12px;
                         border-radius:6px;
                         font-weight:bold;
-                        text-decoration:none;
                         display:inline-block;
                         width:100%;
                         height:45px;
@@ -221,7 +221,7 @@ with left_col:
                         })
                         st.session_state.scan_history = st.session_state.scan_history[:5]
 
-                        # Store workflow URL
+                        # Store workflow URL immediately (button turns blue right away)
                         st.session_state.workflow_url = get_workflow_runs_url()
                     else:
                         st.error(f"❌ Failed to trigger workflow: {response_text}")
