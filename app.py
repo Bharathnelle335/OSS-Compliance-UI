@@ -113,7 +113,7 @@ with left_col:
                 st.markdown(
                     f"""
                     <a href="{st.session_state.workflow_url}" target="_blank" style="
-                        background-color:#28a745;
+                        background-color:#007bff;
                         color:white;
                         padding:10px 12px;
                         border-radius:6px;
@@ -121,10 +121,33 @@ with left_col:
                         text-decoration:none;
                         display:inline-block;
                         width:100%;
+                        height:45px;
                         text-align:center;
+                        line-height:25px;
                     ">
                         🔗 Results
                     </a>
+                    """,
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    """
+                    <div style="
+                        background-color:#cccccc;
+                        color:white;
+                        padding:10px 12px;
+                        border-radius:6px;
+                        font-weight:bold;
+                        text-decoration:none;
+                        display:inline-block;
+                        width:100%;
+                        height:45px;
+                        text-align:center;
+                        line-height:25px;
+                    ">
+                        🔗 Results
+                    </div>
                     """,
                     unsafe_allow_html=True
                 )
