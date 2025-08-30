@@ -226,10 +226,10 @@ else:
 st.markdown(
     """
     <style>
-    /* Floating chat bubble button */
+    /* Bubble fixed at top-right (header level) */
     .ani-bubble {
         position: fixed;
-        top: 20px;
+        top: 20px;  /* align with header area */
         right: 20px;
         background-color: #28a745;
         border: none;
@@ -241,132 +241,62 @@ st.markdown(
         cursor: pointer;
         box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
         animation: pulse 1.8s infinite;
-        z-index: 1000;
+        z-index: 1001;
     }
-
-    /* Pulse animation for highlight */
     @keyframes pulse {
         0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
         70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
     }
-
-    /* Chatbox styling */
+    /* Chatbox right under the bubble */
     .ani-chatbox {
         position: fixed;
-        top: 80px;
+        top: 100px;  /* directly below bubble */
         right: 20px;
-        width: 300px;
+        width: 320px;
         background-color: #ffffff;
         border: 2px solid #28a745;
         border-radius: 12px;
         box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-        padding: 10px;
+        padding: 12px;
         z-index: 1000;
     }
     .ani-header {
         background-color: #28a745;
         color: white;
-        text-align: center;
         padding: 8px;
-        border-radius: 10px 10px 0 0;
-        font-weight: bold;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .ani-close {
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Session toggle for Ani visibility
-if "ani_open" not in st.session_state:
-    st.session_state.ani_open = False
-
-# Floating chat bubble
-bubble_html = """
-    <form action="#" method="get">
-        <button class="ani-bubble" name="ani_click">💬</button>
-    </form>
-"""
-st.markdown(bubble_html, unsafe_allow_html=True)
-
-# Check query param hack for toggle
-params = st.experimental_get_query_params()
-if "ani_click" in params:
-    st.session_state.ani_open = not st.session_state.ani_open
-    st.experimental_set_query_params()  # reset URL
-
-# ---------------- HELP BOT (ANI) ---------------- #
-st.markdown(
-    """
-    <style>
-    /* Floating bubble */
-    .ani-bubble {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #28a745;
-        border: none;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        font-size: 28px;
-        color: white;
-        cursor: pointer;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
-        animation: pulse 1.8s infinite;
-        z-index: 1000;
-    }
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
-        70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
-    }
-    /* Chatbox */
-    .ani-chatbox {
-        position: fixed;
-        bottom: 90px; /* appears above bubble */
-        right: 20px;
-        width: 300px;
-        background-color: #ffffff;
-        border: 2px solid #28a745;
-        border-radius: 12px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-        padding: 10px;
-        z-index: 1000;
-    }
-    .ani-header {
-        background-color: #28a745;
-        color: white;
-        text-align: center;
-        padding: 6px;
         border-radius: 8px 8px 0 0;
         font-weight: bold;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        text-align: center;
+    }
+    .ani-question {
+        background-color: #f1fdf4;
+        border: 1px solid #28a745;
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 6px;
+        cursor: pointer;
+    }
+    .ani-question:hover {
+        background-color: #d4f5dd;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Session toggle
+# State for Ani
 if "ani_open" not in st.session_state:
     st.session_state.ani_open = False
+if "ani_answer" not in st.session_state:
+    st.session_state.ani_answer = None
 
-# Bubble (click toggles Ani)
-if st.button("💬", key="ani_button"):
-    st.session_state.ani_open = not st.session_state.ani_open
+# Floating bubble button (top-right)
+if not st.session_state.ani_open:
+    if st.button("💬", key="ani_button", help="Chat with Ani"):
+        st.session_state.ani_open = True
 
-# Chatbox (appears above bubble, not at page bottom)
+# Chatbox (drops under bubble)
 if st.session_state.ani_open:
     st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
     st.markdown('<div class="ani-header">👩‍💻 Ani – Help Bot</div>', unsafe_allow_html=True)
@@ -380,11 +310,21 @@ if st.session_state.ani_open:
         "Password?": "The default password is 12345 (for demo/testing)."
     }
 
-    question = st.selectbox("💬 Ask Ani", [""] + list(faq.keys()), key="ani_selectbox")
-    if question:
-        st.success(f"👩‍💻 Ani: {faq[question]}")
+    if st.session_state.ani_answer is None:
+        st.markdown("**Select a question:**")
+        for q, a in faq.items():
+            if st.button(q, key=f"ani_q_{q}"):
+                st.session_state.ani_answer = f"👩‍💻 Ani: {a}"
+                st.rerun()
+    else:
+        st.success(st.session_state.ani_answer)
+        if st.button("🔙 Ask another question", key="ani_back"):
+            st.session_state.ani_answer = None
+            st.rerun()
 
     if st.button("❌ Close", key="ani_close"):
         st.session_state.ani_open = False
+        st.session_state.ani_answer = None
+        st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
