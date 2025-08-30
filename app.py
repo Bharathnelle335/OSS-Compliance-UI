@@ -214,39 +214,40 @@ with left_col:
 
 # ================= RIGHT: ANI BOT ================= #
 with right_col:
-    # Scope Ani CSS so it doesn't affect Start Scan button
+    # Scoped CSS for Ani
     st.markdown(
         """
         <style>
         .ani-scope .ani-header {
             display: flex;
             align-items: center;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
         }
+        /* Animated icon (bounce) */
         .ani-scope .ani-icon {
-            font-size: 42px;   /* was 28px */
-            margin-right: 8px;
-            animation: pulseAni 1.2s infinite;
-}
-        @keyframes pulseAni {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+            font-size: 40px;     /* bigger icon */
+            margin-right: 10px;
+            display: inline-block;
+            animation: bounceAni 1.2s infinite;
         }
+        @keyframes bounceAni {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        /* Horizontal chip-style question buttons */
         .ani-scope .ani-questions {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
         }
-        /* Only style buttons inside Ani scope */
         .ani-scope div[data-testid="stButton"] > button {
             background-color: #f8fdf9 !important;
             color: #333 !important;
             border: 1px solid #28a745 !important;
             border-radius: 18px !important;
-            padding: 4px 10px !important;
-            font-size: 13px !important;
+            padding: 4px 12px !important;
+            font-size: 14px !important;
             height: auto !important;
             width: auto !important;
         }
@@ -261,14 +262,17 @@ with right_col:
 
     st.markdown('<div class="ani-scope">', unsafe_allow_html=True)
 
-    st.markdown('<div class="ani-header"><span class="ani-icon">🤖</span> Ani – Help Bot</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="ani-header"><span class="ani-icon">🤖</span> Ani – Help Bot</div>',
+        unsafe_allow_html=True
+    )
 
     faq = {
         "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
-        "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
-        "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
-        "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
-        "Where are results?": "Click the 🔗 Results button any time to open GitHub Actions → runs & artifacts.",
+        "What is Syft?": "Syft generates a Software Bill of Materials (SBOM).",
+        "What is Grype?": "Grype scans for known vulnerabilities (CVEs).",
+        "What is SCANOSS?": "SCANOSS identifies open source components and their licenses.",
+        "Where are results?": "Click the 🔗 Results button any time to see workflow runs and reports.",
         "Password?": "The default password is 12345 (for demo/testing)."
     }
 
