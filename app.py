@@ -7,7 +7,7 @@ import pandas as pd
 # ---------------- CONFIG ---------------- #
 OWNER = "Bharathnelle335"
 REPO = "Universal-OSS-Compliance"
-WORKFLOW_FILE = "oss-compliance.yml"   # Must match the workflow filename in .github/workflows/
+WORKFLOW_FILE = "oss-compliance.yml"   # Must match workflow filename in backend repo
 BRANCH = "main"                        # Update if repo default branch is not main
 
 TOKEN = st.secrets.get("GITHUB_TOKEN", "")
@@ -38,10 +38,9 @@ def trigger_workflow(scan_type, value, enable_syft, enable_grype, enable_scanoss
 def get_workflow_runs_url():
     return f"https://github.com/{OWNER}/{REPO}/actions"
 
-# ---------------- UI LAYOUT ---------------- #
+# ---------------- UI CONFIG ---------------- #
 st.set_page_config(page_title="OSS Compliance & SBOM Scanner", layout="wide")
 
-# CSS styling
 st.markdown(
     """
     <style>
@@ -65,7 +64,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Header with padding
+# ---------------- HEADER ---------------- #
 st.markdown(
     """
     <div style="text-align:center; padding-top:60px; padding-bottom:5px;">
@@ -123,7 +122,7 @@ else:
 
     scan_allowed = password == "12345"
 
-    # --- Session state for history and throttling --- #
+    # --- Session state for history/throttling ---
     if "last_trigger" not in st.session_state:
         st.session_state.last_trigger = {"scan_type": None, "value": None, "scanners": None, "timestamp": 0}
     if "scan_history" not in st.session_state:
@@ -195,7 +194,7 @@ else:
                 else:
                     st.error(f"❌ Failed to trigger workflow: {response_text}")
 
-    # --- History Panel (Hidden until clicked) ---
+    # --- History Panel ---
     if st.session_state.scan_history:
         with st.expander("📜 View Scan History (Last 5)"):
             st.table(st.session_state.scan_history)
@@ -222,3 +221,19 @@ else:
             """,
             unsafe_allow_html=True
         )
+
+# ---------------- HELP BOT (ANI) ---------------- #
+with st.expander("🤖 Ani – Help Bot", expanded=False):
+    faq = {
+        "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
+        "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
+        "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
+        "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
+        "Where are results?": "Once scan is triggered, you can find reports in GitHub Actions → Artifacts. The UI also provides a direct link.",
+        "Password?": "The default password is 12345 (for demo/testing)."
+    }
+
+    question = st.selectbox("💬 Ask Ani a question", [""] + list(faq.keys()))
+
+    if question:
+        st.success(f"👩‍💻 Ani: {faq[question]}")
