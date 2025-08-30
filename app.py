@@ -48,12 +48,12 @@ st.markdown(
     div.stButton > button:first-child {
         background-color: #28a745;
         color: white;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: bold;
-        padding: 15px;
-        border-radius: 8px;
+        padding: 10px;
+        border-radius: 6px;
         width: 100%;
-        height: 60px;
+        height: 45px;
     }
     div.stButton > button:first-child:hover {
         background-color:#218838;
@@ -67,7 +67,7 @@ st.markdown(
 # ---------------- HEADER ---------------- #
 st.markdown(
     """
-    <div style="text-align:center; padding-top:60px; padding-bottom:5px;">
+    <div style="text-align:center; padding-top:30px; padding-bottom:5px;">
         <h2 style="margin-bottom:5px;">OSS Compliance & SBOM Scanner</h2>
         <p style="color:#b30000; font-weight:500; margin-top:0; font-size:14px;">
             For EY Internal Use Only
@@ -80,6 +80,7 @@ st.markdown(
 # ---------------- MAIN LAYOUT (2 COLUMNS) ---------------- #
 left_col, right_col = st.columns([7, 3])
 
+# ================= LEFT: SCAN SETTINGS ================= #
 with left_col:
     if not TOKEN:
         st.warning("⚠️ No GitHub Token found. Please set `GITHUB_TOKEN` in `.streamlit/secrets.toml`")
@@ -87,41 +88,26 @@ with left_col:
         st.subheader("⚙️ Scan Settings")
 
         # --- Your Name ---
-        col1, col2 = st.columns([1,3])
-        with col1:
-            st.markdown("### Your Name")
-        with col2:
-            user_name = st.text_input("Your Name", placeholder="Enter your name", label_visibility="collapsed")
+        user_name = st.text_input("Your Name", placeholder="Enter your name")
 
         # --- Select Scan Type ---
-        col1, col2 = st.columns([1,3])
-        with col1:
-            st.markdown("### Select Scan Type")
-        with col2:
-            scan_type = st.selectbox("Scan Type", ["docker", "git"], index=0, label_visibility="collapsed")
+        scan_type = st.selectbox("Select Scan Type", ["docker", "git"], index=0)
 
         # --- Input Value ---
-        col1, col2 = st.columns([1,3])
-        with col1:
-            st.markdown("### Input Value")
-        with col2:
-            value = st.text_input("Input Value", placeholder="nginx:latest OR https://github.com/psf/requests", label_visibility="collapsed")
+        value = st.text_input("Input Value", placeholder="nginx:latest OR https://github.com/psf/requests")
 
         # --- Select Scanners ---
-        col1, col2 = st.columns([1,3])
-        with col1:
-            st.markdown("### 🛠️ Select Scanners")
-        with col2:
-            enable_syft = st.checkbox("Syft – Generate SBOM (Software Bill of Materials)", value=True)
-            enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
-            enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
+        st.markdown("### 🛠️ Select Scanners")
+        enable_syft = st.checkbox("Syft – Generate SBOM (Software Bill of Materials)", value=True)
+        enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
+        enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
 
-        # --- Password Protection ---
-        col1, col2 = st.columns([1,3])
+        # --- Password + Start Scan in same row ---
+        col1, col2 = st.columns([2,1])  # Password 2/3, Button 1/3
         with col1:
-            st.markdown("### Password")
+            password = st.text_input("Password", type="password", placeholder="Enter password")
         with col2:
-            password = st.text_input("Password", type="password", placeholder="Enter password", label_visibility="collapsed")
+            start_scan = st.button("🚀 Start Scan", use_container_width=True)
 
         scan_allowed = password == "12345"
 
@@ -133,8 +119,8 @@ with left_col:
         if "workflow_url" not in st.session_state:
             st.session_state.workflow_url = None
 
-        # --- Start Scan Button ---
-        if st.button("🚀 Start Scan", use_container_width=True):
+        # --- Scan Logic ---
+        if start_scan:
             if not scan_allowed:
                 st.error("❌ Invalid password. Access denied.")
             else:
@@ -225,7 +211,7 @@ with left_col:
                 unsafe_allow_html=True
             )
 
-# ---------------- ANI HELP BOT (RIGHT PANEL) ---------------- #
+# ================= RIGHT: ANI BOT ================= #
 with right_col:
     st.markdown(
         """
@@ -248,22 +234,25 @@ with right_col:
             100% { transform: scale(1); }
         }
 
-        /* Question buttons small, light, fit text only */
+        /* Compact horizontal question chips */
+        .ani-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
         div[data-testid="stButton"] > button {
-            background-color: #f8fdf9; /* very light green */
-            color: #333;
-            border: 1px solid #28a745;
-            border-radius: 12px;
-            padding: 6px 12px;
-            margin: 4px;
-            font-size: 14px;
-            width: auto !important;   /* fit text width */
-            display: inline-block;
+            background-color: #f8fdf9 !important;
+            color: #333 !important;
+            border: 1px solid #28a745 !important;
+            border-radius: 18px !important;
+            padding: 4px 10px !important;
+            font-size: 13px !important;
+            height: auto !important;
+            width: auto !important;
         }
         div[data-testid="stButton"] > button:hover {
-            background-color: #e6f8ea;
-            color: #000;
-            border: 1px solid #28a745;
+            background-color: #e6f8ea !important;
+            color: #000 !important;
         }
         </style>
         """,
@@ -286,10 +275,12 @@ with right_col:
 
     if st.session_state.ani_answer is None:
         st.markdown("### I can help with these queries:")
+        st.markdown('<div class="ani-questions">', unsafe_allow_html=True)
         for q, a in faq.items():
             if st.button(q, key=f"ani_q_{q}"):
                 st.session_state.ani_answer = f"👩‍💻 Ani: {a}"
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.success(st.session_state.ani_answer)
         if st.button("🔙 Ask another question", key="ani_back"):
