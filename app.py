@@ -224,16 +224,19 @@ with right_col:
             font-size: 22px;
             font-weight: bold;
         }
-        /* Animated icon (bounce) */
+        /* Animated 👩‍💻 icon */
         .ani-scope .ani-icon {
-            font-size: 40px;     /* bigger icon */
-            margin-right: 10px;
+            font-size: 48px;     /* much bigger */
+            margin-right: 12px;
             display: inline-block;
-            animation: bounceAni 1.2s infinite;
+            animation: wiggleAni 1.5s infinite ease-in-out;
         }
-        @keyframes bounceAni {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+        @keyframes wiggleAni {
+            0%   { transform: rotate(0deg) scale(1); }
+            25%  { transform: rotate(-10deg) scale(1.1); }
+            50%  { transform: rotate(10deg) scale(1.2); }
+            75%  { transform: rotate(-10deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
         }
         /* Horizontal chip-style question buttons */
         .ani-scope .ani-questions {
@@ -262,8 +265,9 @@ with right_col:
 
     st.markdown('<div class="ani-scope">', unsafe_allow_html=True)
 
+    # 👩‍💻 icon instead of 🤖
     st.markdown(
-        '<div class="ani-header"><span class="ani-icon">🤖</span> Ani – Help Bot</div>',
+        '<div class="ani-header"><span class="ani-icon">👩‍💻</span> Ani – Help Bot</div>',
         unsafe_allow_html=True
     )
 
