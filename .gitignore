@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+env/
+.venv/
+
+# Streamlit secrets (do NOT commit)
+.streamlit/secrets.toml
+
+# OS files
+.DS_Store
