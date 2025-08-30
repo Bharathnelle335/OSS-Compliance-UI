@@ -77,229 +77,157 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ---------------- MAIN UI ---------------- #
-if not TOKEN:
-    st.warning("⚠️ No GitHub Token found. Please set `GITHUB_TOKEN` in `.streamlit/secrets.toml`")
-else:
-    st.subheader("⚙️ Scan Settings")
+# ---------------- MAIN LAYOUT (2 COLUMNS) ---------------- #
+left_col, right_col = st.columns([7, 3])
 
-    # --- Your Name ---
-    col1, col2 = st.columns([1,3])
-    with col1:
-        st.markdown("### Your Name")
-    with col2:
-        user_name = st.text_input("Your Name", placeholder="Enter your name", label_visibility="collapsed")
+with left_col:
+    if not TOKEN:
+        st.warning("⚠️ No GitHub Token found. Please set `GITHUB_TOKEN` in `.streamlit/secrets.toml`")
+    else:
+        st.subheader("⚙️ Scan Settings")
 
-    # --- Select Scan Type ---
-    col1, col2 = st.columns([1,3])
-    with col1:
-        st.markdown("### Select Scan Type")
-    with col2:
-        scan_type = st.selectbox("Scan Type", ["docker", "git"], index=0, label_visibility="collapsed")
+        # --- Your Name ---
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.markdown("### Your Name")
+        with col2:
+            user_name = st.text_input("Your Name", placeholder="Enter your name", label_visibility="collapsed")
 
-    # --- Input Value ---
-    col1, col2 = st.columns([1,3])
-    with col1:
-        st.markdown("### Input Value")
-    with col2:
-        value = st.text_input("Input Value", placeholder="nginx:latest OR https://github.com/psf/requests", label_visibility="collapsed")
+        # --- Select Scan Type ---
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.markdown("### Select Scan Type")
+        with col2:
+            scan_type = st.selectbox("Scan Type", ["docker", "git"], index=0, label_visibility="collapsed")
 
-    # --- Select Scanners ---
-    col1, col2 = st.columns([1,3])
-    with col1:
-        st.markdown("### 🛠️ Select Scanners")
-    with col2:
-        enable_syft = st.checkbox("Syft – Generate SBOM (Software Bill of Materials)", value=True)
-        enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
-        enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
+        # --- Input Value ---
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.markdown("### Input Value")
+        with col2:
+            value = st.text_input("Input Value", placeholder="nginx:latest OR https://github.com/psf/requests", label_visibility="collapsed")
 
-    # --- Password Protection ---
-    col1, col2 = st.columns([1,3])
-    with col1:
-        st.markdown("### Password")
-    with col2:
-        password = st.text_input("Password", type="password", placeholder="Enter password", label_visibility="collapsed")
+        # --- Select Scanners ---
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.markdown("### 🛠️ Select Scanners")
+        with col2:
+            enable_syft = st.checkbox("Syft – Generate SBOM (Software Bill of Materials)", value=True)
+            enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
+            enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
 
-    scan_allowed = password == "12345"
+        # --- Password Protection ---
+        col1, col2 = st.columns([1,3])
+        with col1:
+            st.markdown("### Password")
+        with col2:
+            password = st.text_input("Password", type="password", placeholder="Enter password", label_visibility="collapsed")
 
-    # --- Session state for history/throttling ---
-    if "last_trigger" not in st.session_state:
-        st.session_state.last_trigger = {"scan_type": None, "value": None, "scanners": None, "timestamp": 0}
-    if "scan_history" not in st.session_state:
-        st.session_state.scan_history = []
-    if "workflow_url" not in st.session_state:
-        st.session_state.workflow_url = None
+        scan_allowed = password == "12345"
 
-    # --- Start Scan Button ---
-    if st.button("🚀 Start Scan", use_container_width=True):
-        if not scan_allowed:
-            st.error("❌ Invalid password. Access denied.")
-        else:
-            current_input = {
-                "scan_type": scan_type,
-                "value": value.strip(),
-                "scanners": (enable_syft, enable_grype, enable_scanoss)
-            }
-            now = time.time()
-            last = st.session_state.last_trigger
+        # --- Session state for history/throttling ---
+        if "last_trigger" not in st.session_state:
+            st.session_state.last_trigger = {"scan_type": None, "value": None, "scanners": None, "timestamp": 0}
+        if "scan_history" not in st.session_state:
+            st.session_state.scan_history = []
+        if "workflow_url" not in st.session_state:
+            st.session_state.workflow_url = None
 
-            if user_name.strip() == "":
-                st.error("⚠️ Please enter your name before triggering the scan.")
-            elif current_input["value"] == "":
-                st.error("⚠️ Please provide an input value before starting the scan.")
-            elif (current_input["scan_type"] == last["scan_type"] and
-                  current_input["value"] == last["value"] and
-                  current_input["scanners"] == last["scanners"] and
-                  now - last["timestamp"] < 180):
-                remaining = int(180 - (now - last["timestamp"]))
-                st.warning(f"⚠️ A scan with the same input was already triggered. Please wait {remaining} seconds before retrying.")
+        # --- Start Scan Button ---
+        if st.button("🚀 Start Scan", use_container_width=True):
+            if not scan_allowed:
+                st.error("❌ Invalid password. Access denied.")
             else:
-                st.info("⏳ Triggering GitHub Actions workflow...")
+                current_input = {
+                    "scan_type": scan_type,
+                    "value": value.strip(),
+                    "scanners": (enable_syft, enable_grype, enable_scanoss)
+                }
+                now = time.time()
+                last = st.session_state.last_trigger
 
-                success, response_text = trigger_workflow(
-                    current_input["scan_type"],
-                    current_input["value"],
-                    enable_syft,
-                    enable_grype,
-                    enable_scanoss,
-                )
-                if success:
-                    st.success("✅ Workflow triggered successfully!")
-
-                    # Update last trigger
-                    st.session_state.last_trigger = {
-                        "scan_type": current_input["scan_type"],
-                        "value": current_input["value"],
-                        "scanners": current_input["scanners"],
-                        "timestamp": now
-                    }
-
-                    # Add to history (keep only last 5)
-                    st.session_state.scan_history.insert(0, {
-                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "user": user_name.strip(),
-                        "scan_type": current_input["scan_type"],
-                        "value": current_input["value"],
-                        "scanners": ", ".join([
-                            s for s, enabled in zip(
-                                ["Syft (SBOM)", "Grype (Vulnerabilities)", "SCANOSS (Licenses)"],
-                                current_input["scanners"]
-                            ) if enabled
-                        ])
-                    })
-                    st.session_state.scan_history = st.session_state.scan_history[:5]
-
-                    # Store workflow URL
-                    st.session_state.workflow_url = get_workflow_runs_url()
+                if user_name.strip() == "":
+                    st.error("⚠️ Please enter your name before triggering the scan.")
+                elif current_input["value"] == "":
+                    st.error("⚠️ Please provide an input value before starting the scan.")
+                elif (current_input["scan_type"] == last["scan_type"] and
+                      current_input["value"] == last["value"] and
+                      current_input["scanners"] == last["scanners"] and
+                      now - last["timestamp"] < 180):
+                    remaining = int(180 - (now - last["timestamp"]))
+                    st.warning(f"⚠️ A scan with the same input was already triggered. Please wait {remaining} seconds before retrying.")
                 else:
-                    st.error(f"❌ Failed to trigger workflow: {response_text}")
+                    st.info("⏳ Triggering GitHub Actions workflow...")
 
-    # --- History Panel ---
-    if st.session_state.scan_history:
-        with st.expander("📜 View Scan History (Last 5)"):
-            st.table(st.session_state.scan_history)
+                    success, response_text = trigger_workflow(
+                        current_input["scan_type"],
+                        current_input["value"],
+                        enable_syft,
+                        enable_grype,
+                        enable_scanoss,
+                    )
+                    if success:
+                        st.success("✅ Workflow triggered successfully!")
 
-    # --- Persistent Workflow Link ---
-    if st.session_state.workflow_url:
-        st.markdown(
-            f"""
-            <div style="margin-top:20px; text-align:center;">
-                <a href="{st.session_state.workflow_url}" target="_blank" style="
-                    background-color:#28a745;
-                    color:white;
-                    padding:15px 20px;
-                    border-radius:8px;
-                    font-weight:bold;
-                    text-decoration:none;
-                    display:inline-block;
-                    width:80%;
-                    text-align:center;
-                ">
-                    🔗 View Workflow Runs & Download Results
-                </a>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+                        # Update last trigger
+                        st.session_state.last_trigger = {
+                            "scan_type": current_input["scan_type"],
+                            "value": current_input["value"],
+                            "scanners": current_input["scanners"],
+                            "timestamp": now
+                        }
 
-# ---------------- HELP BOT (ANI) ---------------- #
-st.markdown(
-    """
-    <style>
-    /* Bubble fixed at top-right (header level) */
-    .ani-bubble {
-        position: fixed;
-        top: 20px;  /* align with header area */
-        right: 20px;
-        background-color: #28a745;
-        border: none;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        font-size: 28px;
-        color: white;
-        cursor: pointer;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
-        animation: pulse 1.8s infinite;
-        z-index: 1001;
-    }
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
-        70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
-    }
-    /* Chatbox right under the bubble */
-    .ani-chatbox {
-        position: fixed;
-        top: 100px;  /* directly below bubble */
-        right: 20px;
-        width: 320px;
-        background-color: #ffffff;
-        border: 2px solid #28a745;
-        border-radius: 12px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-        padding: 12px;
-        z-index: 1000;
-    }
-    .ani-header {
-        background-color: #28a745;
-        color: white;
-        padding: 8px;
-        border-radius: 8px 8px 0 0;
-        font-weight: bold;
-        text-align: center;
-    }
-    .ani-question {
-        background-color: #f1fdf4;
-        border: 1px solid #28a745;
-        border-radius: 12px;
-        padding: 8px;
-        margin-bottom: 6px;
-        cursor: pointer;
-    }
-    .ani-question:hover {
-        background-color: #d4f5dd;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+                        # Add to history (keep only last 5)
+                        st.session_state.scan_history.insert(0, {
+                            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "user": user_name.strip(),
+                            "scan_type": current_input["scan_type"],
+                            "value": current_input["value"],
+                            "scanners": ", ".join([
+                                s for s, enabled in zip(
+                                    ["Syft (SBOM)", "Grype (Vulnerabilities)", "SCANOSS (Licenses)"],
+                                    current_input["scanners"]
+                                ) if enabled
+                            ])
+                        })
+                        st.session_state.scan_history = st.session_state.scan_history[:5]
 
-# State for Ani
-if "ani_open" not in st.session_state:
-    st.session_state.ani_open = False
-if "ani_answer" not in st.session_state:
-    st.session_state.ani_answer = None
+                        # Store workflow URL
+                        st.session_state.workflow_url = get_workflow_runs_url()
+                    else:
+                        st.error(f"❌ Failed to trigger workflow: {response_text}")
 
-# Floating bubble button (top-right)
-if not st.session_state.ani_open:
-    if st.button("💬", key="ani_button", help="Chat with Ani"):
-        st.session_state.ani_open = True
+        # --- History Panel ---
+        if st.session_state.scan_history:
+            with st.expander("📜 View Scan History (Last 5)"):
+                st.table(st.session_state.scan_history)
 
-# Chatbox (drops under bubble)
-if st.session_state.ani_open:
-    st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
-    st.markdown('<div class="ani-header">👩‍💻 Ani – Help Bot</div>', unsafe_allow_html=True)
+        # --- Persistent Workflow Link ---
+        if st.session_state.workflow_url:
+            st.markdown(
+                f"""
+                <div style="margin-top:20px; text-align:center;">
+                    <a href="{st.session_state.workflow_url}" target="_blank" style="
+                        background-color:#28a745;
+                        color:white;
+                        padding:15px 20px;
+                        border-radius:8px;
+                        font-weight:bold;
+                        text-decoration:none;
+                        display:inline-block;
+                        width:80%;
+                        text-align:center;
+                    ">
+                        🔗 View Workflow Runs & Download Results
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# ---------------- ANI HELP BOT (RIGHT PANEL) ---------------- #
+with right_col:
+    st.markdown("## 🤖 Ani – Help Bot")
 
     faq = {
         "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
@@ -310,8 +238,11 @@ if st.session_state.ani_open:
         "Password?": "The default password is 12345 (for demo/testing)."
     }
 
+    if "ani_answer" not in st.session_state:
+        st.session_state.ani_answer = None
+
     if st.session_state.ani_answer is None:
-        st.markdown("**Select a question:**")
+        st.markdown("### ❓ Select a question")
         for q, a in faq.items():
             if st.button(q, key=f"ani_q_{q}"):
                 st.session_state.ani_answer = f"👩‍💻 Ani: {a}"
@@ -321,10 +252,3 @@ if st.session_state.ani_open:
         if st.button("🔙 Ask another question", key="ani_back"):
             st.session_state.ani_answer = None
             st.rerun()
-
-    if st.button("❌ Close", key="ani_close"):
-        st.session_state.ani_open = False
-        st.session_state.ani_answer = None
-        st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
