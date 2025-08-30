@@ -102,12 +102,32 @@ with left_col:
         enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
         enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
 
-        # --- Password + Start Scan in same row ---
-        col1, col2 = st.columns([2,1])  # Password 2/3, Button 1/3
+        # --- Password + Start Scan + Results in same row ---
+        col1, col2, col3 = st.columns([2,1,1])  # Password 50%, Scan 25%, Results 25%
         with col1:
             password = st.text_input("Password", type="password", placeholder="Enter password")
         with col2:
             start_scan = st.button("🚀 Start Scan", use_container_width=True)
+        with col3:
+            if "workflow_url" in st.session_state and st.session_state.workflow_url:
+                st.markdown(
+                    f"""
+                    <a href="{st.session_state.workflow_url}" target="_blank" style="
+                        background-color:#28a745;
+                        color:white;
+                        padding:10px 12px;
+                        border-radius:6px;
+                        font-weight:bold;
+                        text-decoration:none;
+                        display:inline-block;
+                        width:100%;
+                        text-align:center;
+                    ">
+                        🔗 Results
+                    </a>
+                    """,
+                    unsafe_allow_html=True
+                )
 
         scan_allowed = password == "12345"
 
@@ -187,29 +207,6 @@ with left_col:
         if st.session_state.scan_history:
             with st.expander("📜 View Scan History (Last 5)"):
                 st.table(st.session_state.scan_history)
-
-        # --- Persistent Workflow Link ---
-        if st.session_state.workflow_url:
-            st.markdown(
-                f"""
-                <div style="margin-top:20px; text-align:center;">
-                    <a href="{st.session_state.workflow_url}" target="_blank" style="
-                        background-color:#28a745;
-                        color:white;
-                        padding:15px 20px;
-                        border-radius:8px;
-                        font-weight:bold;
-                        text-decoration:none;
-                        display:inline-block;
-                        width:80%;
-                        text-align:center;
-                    ">
-                        🔗 View Workflow Runs & Download Results
-                    </a>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
 
 # ================= RIGHT: ANI BOT ================= #
 with right_col:
