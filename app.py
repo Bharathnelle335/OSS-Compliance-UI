@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import time
 from datetime import datetime
+import pandas as pd
 
 # ---------------- CONFIG ---------------- #
 OWNER = "Bharathnelle335"
@@ -64,10 +65,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Header
+# Header with padding
 st.markdown(
     """
-    <div style="text-align:center; padding:5px;">
+    <div style="text-align:center; padding-top:60px; padding-bottom:5px;">
         <h2 style="margin-bottom:5px;">OSS Compliance & SBOM Scanner</h2>
         <p style="color:#b30000; font-weight:500; margin-top:0; font-size:14px;">
             For EY Internal Use Only
@@ -113,6 +114,15 @@ else:
         enable_grype = st.checkbox("Grype – Detect vulnerabilities in packages & images", value=True)
         enable_scanoss = st.checkbox("SCANOSS – Identify OSS licenses & components", value=True)
 
+    # --- Password Protection ---
+    col1, col2 = st.columns([1,3])
+    with col1:
+        st.markdown("### Password")
+    with col2:
+        password = st.text_input("Password", type="password", placeholder="Enter password", label_visibility="collapsed")
+
+    scan_allowed = password == "12345"
+
     # --- Session state for history and throttling --- #
     if "last_trigger" not in st.session_state:
         st.session_state.last_trigger = {"scan_type": None, "value": None, "scanners": None, "timestamp": 0}
@@ -122,67 +132,68 @@ else:
         st.session_state.workflow_url = None
 
     # --- Start Scan Button ---
-    run_scan = st.button("🚀 Start Scan", use_container_width=True)
-
-    if run_scan:
-        current_input = {
-            "scan_type": scan_type,
-            "value": value.strip(),
-            "scanners": (enable_syft, enable_grype, enable_scanoss)
-        }
-        now = time.time()
-        last = st.session_state.last_trigger
-
-        if user_name.strip() == "":
-            st.error("⚠️ Please enter your name before triggering the scan.")
-        elif current_input["value"] == "":
-            st.error("⚠️ Please provide an input value before starting the scan.")
-        elif (current_input["scan_type"] == last["scan_type"] and
-              current_input["value"] == last["value"] and
-              current_input["scanners"] == last["scanners"] and
-              now - last["timestamp"] < 180):
-            remaining = int(180 - (now - last["timestamp"]))
-            st.warning(f"⚠️ A scan with the same input was already triggered. Please wait {remaining} seconds before retrying.")
+    if st.button("🚀 Start Scan", use_container_width=True):
+        if not scan_allowed:
+            st.error("❌ Invalid password. Access denied.")
         else:
-            st.info("⏳ Triggering GitHub Actions workflow...")
+            current_input = {
+                "scan_type": scan_type,
+                "value": value.strip(),
+                "scanners": (enable_syft, enable_grype, enable_scanoss)
+            }
+            now = time.time()
+            last = st.session_state.last_trigger
 
-            success, response_text = trigger_workflow(
-                current_input["scan_type"],
-                current_input["value"],
-                enable_syft,
-                enable_grype,
-                enable_scanoss,
-            )
-            if success:
-                st.success("✅ Workflow triggered successfully!")
-
-                # Update last trigger
-                st.session_state.last_trigger = {
-                    "scan_type": current_input["scan_type"],
-                    "value": current_input["value"],
-                    "scanners": current_input["scanners"],
-                    "timestamp": now
-                }
-
-                # Add to history (keep only last 5)
-                st.session_state.scan_history.insert(0, {
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "user": user_name.strip(),
-                    "scan_type": current_input["scan_type"],
-                    "value": current_input["value"],
-                    "scanners": ", ".join([
-                        s for s, enabled in zip(
-                            ["Syft (SBOM)", "Grype (Vulnerabilities)", "SCANOSS (Licenses)"],
-                            current_input["scanners"]
-                        ) if enabled
-                    ])
-                })
-                st.session_state.scan_history = st.session_state.scan_history[:5]
-
-                # Store workflow URL
-                st.session_state.workflow_url = get_workflow_runs_url()
+            if user_name.strip() == "":
+                st.error("⚠️ Please enter your name before triggering the scan.")
+            elif current_input["value"] == "":
+                st.error("⚠️ Please provide an input value before starting the scan.")
+            elif (current_input["scan_type"] == last["scan_type"] and
+                  current_input["value"] == last["value"] and
+                  current_input["scanners"] == last["scanners"] and
+                  now - last["timestamp"] < 180):
+                remaining = int(180 - (now - last["timestamp"]))
+                st.warning(f"⚠️ A scan with the same input was already triggered. Please wait {remaining} seconds before retrying.")
             else:
-                st.error(f"❌ Failed to trigger workflow: {response_text}")
+                st.info("⏳ Triggering GitHub Actions workflow...")
+
+                success, response_text = trigger_workflow(
+                    current_input["scan_type"],
+                    current_input["value"],
+                    enable_syft,
+                    enable_grype,
+                    enable_scanoss,
+                )
+                if success:
+                    st.success("✅ Workflow triggered successfully!")
+
+                    # Update last trigger
+                    st.session_state.last_trigger = {
+                        "scan_type": current_input["scan_type"],
+                        "value": current_input["value"],
+                        "scanners": current_input["scanners"],
+                        "timestamp": now
+                    }
+
+                    # Add to history (keep only last 5)
+                    st.session_state.scan_history.insert(0, {
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "user": user_name.strip(),
+                        "scan_type": current_input["scan_type"],
+                        "value": current_input["value"],
+                        "scanners": ", ".join([
+                            s for s, enabled in zip(
+                                ["Syft (SBOM)", "Grype (Vulnerabilities)", "SCANOSS (Licenses)"],
+                                current_input["scanners"]
+                            ) if enabled
+                        ])
+                    })
+                    st.session_state.scan_history = st.session_state.scan_history[:5]
+
+                    # Store workflow URL
+                    st.session_state.workflow_url = get_workflow_runs_url()
+                else:
+                    st.error(f"❌ Failed to trigger workflow: {response_text}")
 
     # --- History Panel (Hidden until clicked) ---
     if st.session_state.scan_history:
