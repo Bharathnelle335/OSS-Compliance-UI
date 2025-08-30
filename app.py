@@ -307,10 +307,10 @@ if "ani_click" in params:
 st.markdown(
     """
     <style>
-    /* Floating chat bubble button */
+    /* Floating bubble */
     .ani-bubble {
         position: fixed;
-        top: 120px; /* moved lower so it's below header */
+        bottom: 20px;
         right: 20px;
         background-color: #28a745;
         border: none;
@@ -329,9 +329,10 @@ st.markdown(
         70% { box-shadow: 0 0 0 15px rgba(40,167,69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
     }
+    /* Chatbox */
     .ani-chatbox {
         position: fixed;
-        top: 190px; /* chatbox appears just below bubble */
+        bottom: 90px; /* appears above bubble */
         right: 20px;
         width: 300px;
         background-color: #ffffff;
@@ -352,50 +353,38 @@ st.markdown(
         justify-content: space-between;
         align-items: center;
     }
-    .ani-close {
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Toggle Ani visibility in session state
+# Session toggle
 if "ani_open" not in st.session_state:
     st.session_state.ani_open = False
 
-# Floating bubble button
-if not st.session_state.ani_open:
-    if st.button("💬", key="ani_button", help="Chat with Ani", use_container_width=False):
-        st.session_state.ani_open = True
+# Bubble (click toggles Ani)
+if st.button("💬", key="ani_button"):
+    st.session_state.ani_open = not st.session_state.ani_open
 
-# Chatbox
+# Chatbox (appears above bubble, not at page bottom)
 if st.session_state.ani_open:
-    with st.container():
-        st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="ani-header">👩‍💻 Ani – Help Bot <span class="ani-close">❌</span></div>',
-            unsafe_allow_html=True
-        )
+    st.markdown('<div class="ani-chatbox">', unsafe_allow_html=True)
+    st.markdown('<div class="ani-header">👩‍💻 Ani – Help Bot</div>', unsafe_allow_html=True)
 
-        faq = {
-            "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
-            "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
-            "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
-            "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
-            "Where are results?": "Once scan is triggered, you can find reports in GitHub Actions → Artifacts. The UI also provides a direct link.",
-            "Password?": "The default password is 12345 (for demo/testing)."
-        }
+    faq = {
+        "How to start scan?": "Enter your name, select scan type (docker/git), provide input, choose scanners, enter password (12345), and click Start Scan.",
+        "What is Syft?": "Syft generates a Software Bill of Materials (SBOM) listing all dependencies in an image or repo.",
+        "What is Grype?": "Grype scans for known vulnerabilities (CVEs) in dependencies and images.",
+        "What is SCANOSS?": "SCANOSS identifies open source components and their licenses from source code.",
+        "Where are results?": "Once scan is triggered, you can find reports in GitHub Actions → Artifacts. The UI also provides a direct link.",
+        "Password?": "The default password is 12345 (for demo/testing)."
+    }
 
-        question = st.selectbox("💬 Ask Ani", [""] + list(faq.keys()), key="ani_selectbox")
+    question = st.selectbox("💬 Ask Ani", [""] + list(faq.keys()), key="ani_selectbox")
+    if question:
+        st.success(f"👩‍💻 Ani: {faq[question]}")
 
-        if question:
-            st.success(f"👩‍💻 Ani: {faq[question]}")
+    if st.button("❌ Close", key="ani_close"):
+        st.session_state.ani_open = False
 
-        # Close button (inline)
-        if st.button("❌ Close", key="ani_close"):
-            st.session_state.ani_open = False
-
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
