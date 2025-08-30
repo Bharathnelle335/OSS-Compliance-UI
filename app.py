@@ -225,10 +225,10 @@ with right_col:
             font-weight: bold;
         }
         .ani-scope .ani-icon {
-            font-size: 28px;
+            font-size: 42px;   /* was 28px */
             margin-right: 8px;
-            animation: pulseAni 1.5s infinite;
-        }
+            animation: pulseAni 1.2s infinite;
+}
         @keyframes pulseAni {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
