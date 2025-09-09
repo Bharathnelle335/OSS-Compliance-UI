@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import requests
 import time
@@ -17,23 +18,74 @@ headers = {
     "Accept": "application/vnd.github+json"
 }
 
-# ---------------- FUNCTIONS ---------------- #
-def trigger_workflow(scan_type, value, enable_syft, enable_grype, enable_scanoss):
+# ---------------- HELPERS ---------------- #
+def normalize_github_url_and_ref(url: str, ref_input: str):
+    """
+    Returns (normalized_git_url, resolved_ref, meta)
+    - Accepts web URLs like:
+        https://github.com/<owner>/<repo>/tree/<ref>
+        https://github.com/<owner>/<repo>/commit/<sha>
+        https://github.com/<owner>/<repo>/releases/tag/<tag>
+      and converts to https://github.com/<owner>/<repo>.git, extracting ref if present.
+    - If ref_input is provided, it takes precedence (after stripping refs/heads|refs/tags).
+    """
+    url = (url or "").strip()
+    ref_input = (ref_input or "").strip()
+
+    # Clean "refs/heads/" or "refs/tags/" prefixes if user pasted full ref path
+    ref_input = ref_input.replace("refs/heads/", "").replace("refs/tags/", "")
+
+    base_url = url
+    detected_ref = ""
+
+    if url.startswith("https://github.com/"):
+        if "/tree/" in url:
+            detected_ref = url.split("/tree/", 1)[1].split("/", 1)[0]
+            base_url = url.split("/tree/", 1)[0]
+        elif "/commit/" in url:
+            detected_ref = url.split("/commit/", 1)[1].split("/", 1)[0]
+            base_url = url.split("/commit/", 1)[0]
+        elif "/releases/tag/" in url:
+            detected_ref = url.split("/releases/tag/", 1)[1].split("/", 1)[0]
+            base_url = url.split("/releases/tag/", 1)[0]
+        # ensure .git suffix for Git operations
+        if not base_url.endswith(".git"):
+            base_url = base_url.rstrip("/") + ".git"
+
+    # Choose resolved ref: explicit > detected > ""
+    resolved_ref = ref_input or detected_ref or ""
+
+    meta = {
+        "parsed_from_url": bool(detected_ref),
+        "detected_ref": detected_ref,
+        "normalized_url": base_url
+    }
+    return base_url, resolved_ref, meta
+
+def trigger_workflow(scan_type, value, enable_syft, enable_grype, enable_scanoss, git_ref_input=""):
     url = f"https://api.github.com/repos/{OWNER}/{REPO}/actions/workflows/{WORKFLOW_FILE}/dispatches"
 
+    # Build inputs
     inputs = {
         "scan_type": scan_type,
         "docker_image": value if scan_type == "docker" else "",
-        "git_url": value if scan_type == "git" else "",
+        "git_url": "",
         "enable_syft": str(enable_syft).lower(),
         "enable_grype": str(enable_grype).lower(),
         "enable_scanoss": str(enable_scanoss).lower()
     }
 
+    # Normalize Git inputs if scanning a repo
+    if scan_type == "git":
+        norm_url, resolved_ref, _ = normalize_github_url_and_ref(value, git_ref_input)
+        inputs["git_url"] = norm_url
+        # Only include git_ref if non-empty to avoid 422 when workflow doesn't define it
+        if resolved_ref:
+            inputs["git_ref"] = resolved_ref
+
     data = {"ref": BRANCH, "inputs": inputs}
     r = requests.post(url, headers=headers, json=data)
     return r.status_code == 204, r.text
-
 
 def get_workflow_runs_url():
     return f"https://github.com/{OWNER}/{REPO}/actions"
@@ -95,7 +147,28 @@ with left_col:
         scan_type = st.selectbox("Select Scan Type", ["docker", "git"], index=0)
 
         # --- Input Value ---
-        value = st.text_input("Input Value", placeholder="nginx:latest OR https://github.com/psf/requests")
+        value = st.text_input(
+            "Input Value",
+            placeholder="nginx:latest  OR  https://github.com/owner/repo[.git][/tree/v1.2.3]",
+            help="For Git, you can paste a normal repo URL or a web URL containing /tree/<ref>, /commit/<sha>, or /releases/tag/<tag>."
+        )
+
+        # --- Optional Git ref (only shown for git) ---
+        git_ref_input = ""
+        if scan_type == "git":
+            git_ref_input = st.text_input(
+                "Git ref (branch / tag / commit) — optional",
+                value="",
+                help="Examples: main, v1.2.3, 1a2b3c4. Leave blank if your URL already includes /tree/<ref> or /releases/tag/<tag>."
+            )
+
+            # Live preview to build trust
+            norm_url, resolved_ref, meta = normalize_github_url_and_ref(value, git_ref_input)
+            with st.expander("🔎 Git input normalization preview", expanded=False):
+                st.write("**Repo URL (normalized):**", norm_url or "(none)")
+                st.write("**Ref (resolved):**", resolved_ref or "(none)")
+                if meta.get("parsed_from_url"):
+                    st.info(f"Detected ref `{meta.get('detected_ref')}` from the pasted URL.")
 
         # --- Select Scanners ---
         st.markdown("### 🛠️ Select Scanners")
@@ -110,7 +183,6 @@ with left_col:
         with col2:
             start_scan = st.button("🚀 Start Scan", use_container_width=True)
         with col3:
-            # Results button ALWAYS active, links to Actions page
             workflow_url = get_workflow_runs_url()
             st.markdown(
                 f"""
@@ -151,6 +223,7 @@ with left_col:
                 current_input = {
                     "scan_type": scan_type,
                     "value": value.strip(),
+                    "git_ref": (git_ref_input or "").strip(),
                     "scanners": (enable_syft, enable_grype, enable_scanoss)
                 }
                 now = time.time()
@@ -175,6 +248,7 @@ with left_col:
                         enable_syft,
                         enable_grype,
                         enable_scanoss,
+                        git_ref_input=current_input["git_ref"]
                     )
                     if success:
                         st.success("✅ Workflow triggered successfully!")
@@ -202,7 +276,6 @@ with left_col:
                         })
                         st.session_state.scan_history = st.session_state.scan_history[:5]
 
-                        # Store workflow URL immediately (still available if you want)
                         st.session_state.workflow_url = get_workflow_runs_url()
                     else:
                         st.error(f"❌ Failed to trigger workflow: {response_text}")
